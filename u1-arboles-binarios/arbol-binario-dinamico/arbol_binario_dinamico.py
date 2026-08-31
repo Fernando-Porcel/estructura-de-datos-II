@@ -1,3 +1,4 @@
+from collections import deque
 from nodo import Nodo
 
 
@@ -155,3 +156,125 @@ class ArbolBinario:
             self._post_orden(nodo.izquierdo, resultado)
             self._post_orden(nodo.derecho, resultado)
             resultado.append(nodo.valor)
+
+    def cantidad(self):
+        """
+        Retorna el número total de nodos en el árbol.
+
+        Returns:
+            int: El número de nodos en el árbol.
+        """
+        def _cantidad(nodo):
+            if nodo is None:
+                return 0
+            return 1 + _cantidad(nodo.izquierdo) + _cantidad(nodo.derecho)
+
+        return _cantidad(self.raiz)
+
+    def altura(self) -> int:
+        """
+        Retorna la altura máxima del árbol.
+
+        Returns:
+            int: La altura del árbol. Retorna 0 si el árbol está vacío.
+        """
+        return self._altura_recursivo(self.raiz)
+
+    def _altura_recursivo(self, nodo: Nodo) -> int:
+        """
+        Calcula la altura de un subárbol de forma recursiva.
+
+        Args:
+            nodo (Nodo): El nodo actual en la recursión.
+
+        Returns:
+            int: La altura del subárbol, contando desde el nodo actual.
+        """
+        if nodo is None:
+            return -1
+        
+        return 1 + max(self._altura_recursivo(nodo.izquierdo),
+                       self._altura_recursivo(nodo.derecho))
+    
+    def amplitud(self) -> int:
+        """
+        Calcula el ancho máximo del árbol (el número máximo de nodos en un nivel).
+
+        Returns:
+            int: La amplitud máxima del árbol. Retorna 0 si el árbol está vacío.
+        """
+        if self.raiz is None:
+            return 0
+        
+        cola = deque([self.raiz])
+        max_amplitud = 0
+        
+        while cola:
+            longitud_nivel = len(cola)
+            max_amplitud = max(max_amplitud, longitud_nivel)
+
+            for _ in range(longitud_nivel):
+                nodo_actual = cola.popleft()
+
+                if nodo_actual.izquierdo:
+                    cola.append(nodo_actual.izquierdo)
+
+                if nodo_actual.derecho:
+                    cola.append(nodo_actual.derecho)
+
+        return max_amplitud
+
+    def nivel(self):
+        """
+        Calcula de la cantidad de niveles de un arbol binario.
+    
+        Returns:
+            int: Nivel de un arbol.
+        """
+        return self.altura() + 1
+
+    def eliminar(self, valor: int) -> None:
+        """
+        Elimina la primera instancia de un valor específico en el árbol.
+
+        Args:
+            valor (int): El valor que se desea eliminar.
+        """
+        self.raiz, eliminado = self._eliminar_recur(valor, self.raiz)
+
+        if eliminado:
+            self._tamanio -= 1
+
+    def _eliminar_recur(self, valor: int, nodo: Nodo) -> tuple[Nodo, bool]:
+        """
+        Método privado recursivo para gestionar la eliminación de un nodo.
+
+        Args:
+            valor (int): Valor a buscar y eliminar.
+            nodo (Nodo): Nodo actual en la exploración.
+
+        Returns:
+            tuple[Nodo, bool]: El nodo (actualizado o nuevo) y un booleano que indica si se eliminó.
+        """
+        if nodo is None:
+            return None, False
+        
+        if valor < nodo.valor:
+            nodo.izquierdo, sw = self._eliminar_recur(valor, nodo.izquierdo)
+        elif valor > nodo.valor:
+            nodo.derecho, sw = self._eliminar_recur(valor, nodo.derecho)
+        else:
+            if nodo.es_hoja():
+                return None, True
+            
+            if nodo.izquierdo is None:
+                return nodo.derecho, True
+            
+            if nodo.derecho is None:
+                return nodo.izquierdo, True
+            
+            sucesor = self._minimo_nodo(nodo.derecho)
+            nodo.valor = sucesor.valor
+            nodo.derecho, sw = self._eliminar_recur(sucesor.valor, nodo.derecho)
+        
+        return nodo, sw

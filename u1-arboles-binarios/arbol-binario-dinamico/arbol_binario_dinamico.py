@@ -1,4 +1,5 @@
 from collections import deque
+import re
 from nodo import Nodo
 
 
@@ -278,3 +279,62 @@ class ArbolBinario:
             nodo.derecho, sw = self._eliminar_recur(sucesor.valor, nodo.derecho)
         
         return nodo, sw
+
+    def tokenizar(self, expresion: str) -> list[str]:
+        """
+        Convierte una cadena infija en una lista de tokens (números, operadores y paréntesis).
+        Permite soportar números de más de un dígito.
+        """
+        return re.findall(r'\d+|[+*/()-]', expresion.replace(" ", ""))
+
+    def _crear_subarbol(self, pila_nodos: list[Nodo], pila_operadores: list[str]) -> None:
+        """
+        Método auxiliar privado para extraer un operador y 2 operandos, 
+        construir el subárbol y colocarlo nuevamente en la pila de nodos.
+        """
+        operador = pila_operadores.pop()
+        nodo_op = Nodo(operador)
+        
+        # El primer nodo extraído es el hijo DERECHO, el segundo es el IZQUIERDO
+        nodo_op.derecho = pila_nodos.pop()
+        nodo_op.izquierdo = pila_nodos.pop()
+        
+        pila_nodos.append(nodo_op)
+
+    def construir(self, expresion: str) -> None:
+        """
+        Construye el árbol de expresión directamente a partir de una cadena en notación infija.
+        """
+        tokens = self.tokenizar(expresion)
+        precedencia = {'+': 1, '-': 1, '*': 2, '/': 2}
+        
+        pila_nodos: list[Nodo] = []
+        pila_operadores: list[str] = []
+
+        for token in tokens:
+            if token.isdigit():
+                # Si es operando, creamos un nodo y va a la pila
+                pila_nodos.append(Nodo(token))
+                
+            elif token == '(':
+                pila_operadores.append(token)
+                
+            elif token == ')':
+                while pila_operadores and pila_operadores[-1] != '(':
+                    self._crear_subarbol(pila_nodos, pila_operadores)
+                pila_operadores.pop()  # Elimina el '('
+                
+            elif token in precedencia:
+                while (pila_operadores and pila_operadores[-1] != '(' and 
+                       precedencia.get(pila_operadores[-1], 0) >= precedencia[token]):
+                    self._crear_subarbol(pila_nodos, pila_operadores)
+                
+                pila_operadores.append(token)
+
+        # Vaciar los operadores restantes
+        while pila_operadores:
+            self._crear_subarbol(pila_nodos, pila_operadores)
+
+        # El último nodo en la pila es la raíz del árbol completo
+        if pila_nodos:
+            self.raiz = pila_nodos.pop()

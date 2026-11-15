@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tres en Raya</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+</head>
+<body>
+    <main class="juego">
+        <h1>Tres en Raya</h1>
+
+        <div class="controles">
+            <label for="modo">Modo de juego</label>
+            <select id="modo">
+                <option value="humano_vs_humano">Humano vs Humano</option>
+                <option value="humano_vs_minimax">Humano vs IA Minimax</option>
+                <option value="humano_vs_ml">Humano vs IA Machine Learning</option>
+            </select>
+            <label for="dificultad">Dificultad (modo Minimax)</label>
+            <select id="dificultad">
+                <option value="facil">Fácil</option>
+                <option value="medio">Medio</option>
+                <option value="dificil" selected>Difícil</option>
+            </select>
+            <button id="btn-nueva" type="button">Nueva partida</button>
+        </div>
+
+        <p id="mensaje" class="mensaje">Elige un modo y pulsa "Nueva partida"</p>
+
+        <div id="tablero" class="tablero">
+            <button class="casilla" data-fila="0" data-columna="0"></button>
+            <button class="casilla" data-fila="0" data-columna="1"></button>
+            <button class="casilla" data-fila="0" data-columna="2"></button>
+            <button class="casilla" data-fila="1" data-columna="0"></button>
+            <button class="casilla" data-fila="1" data-columna="1"></button>
+            <button class="casilla" data-fila="1" data-columna="2"></button>
+            <button class="casilla" data-fila="2" data-columna="0"></button>
+            <button class="casilla" data-fila="2" data-columna="1"></button>
+            <button class="casilla" data-fila="2" data-columna="2"></button>
+        </div>
+
+        <section class="metricas">
+            <h2>Métricas de la IA</h2>
+            <p>Nodos explorados: <span id="metrica-nodos">0</span></p>
+            <p>Tiempo de respuesta: <span id="metrica-tiempo">0</span> s</p>
+        </section>
+    </main>
+    <script src="{{ url_for('static', filename='juego.js') }}"></script>
+</body>
+</html>

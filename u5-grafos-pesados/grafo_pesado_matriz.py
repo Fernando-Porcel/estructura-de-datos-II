@@ -266,3 +266,151 @@ class GrafoPesadoMatriz:
             actual = predecesores[actual]
         
         return camino[::-1]
+
+    # ------------------------------------------------------------------
+    # Bellman-Ford (camino más corto, admite pesos negativos)
+    # ------------------------------------------------------------------
+    def bellman_ford(self, origen, destino):
+        """Camino más corto entre dos vértices con el algoritmo de Bellman-Ford.
+
+        A diferencia de Dijkstra, admite aristas con peso negativo. Relaja
+        todas las aristas V-1 veces; si todavía se puede mejorar una distancia
+        después de eso, existe un ciclo de peso negativo.
+
+        Args:
+            origen (int): Índice del vértice de inicio.
+            destino (int): Índice del vértice de destino.
+
+        Returns:
+            tuple: (camino, distancia).
+            None: Si algún vértice no existe o no hay camino.
+
+        Raises:
+            ValueError: Si hay un ciclo negativo alcanzable desde el origen.
+        """
+        if (origen < 0 or origen >= self.num_vertices
+                or destino < 0 or destino >= self.num_vertices):
+            return None
+
+        distancias = {v: float('inf') for v in range(self.num_vertices)}
+        distancias[origen] = 0
+        predecesores = {v: None for v in range(self.num_vertices)}
+
+        # V-1 rondas: en cada una se relajan TODAS las aristas
+        for _ in range(self.num_vertices - 1):
+            hubo_cambio = False
+            for u in range(self.num_vertices):
+                if distancias[u] == float('inf'):
+                    continue  # todavía no se llega a u
+                for v in range(self.num_vertices):
+                    peso = self._matriz[u][v]
+                    if peso != 0 and distancias[u] + peso < distancias[v]:
+                        distancias[v] = distancias[u] + peso
+                        predecesores[v] = u
+                        hubo_cambio = True
+            if not hubo_cambio:
+                break  # ya está estable, no hace falta seguir
+
+        # Ronda extra: si aún mejora algo, hay ciclo negativo
+        for u in range(self.num_vertices):
+            if distancias[u] == float('inf'):
+                continue
+            for v in range(self.num_vertices):
+                peso = self._matriz[u][v]
+                if peso != 0 and distancias[u] + peso < distancias[v]:
+                    raise ValueError("El grafo tiene un ciclo de peso negativo")
+
+        if distancias[destino] == float('inf'):
+            return None
+
+        return self._reconstruir_camino(predecesores, destino), distancias[destino]
+
+    # ------------------------------------------------------------------
+    # Árbol de expansión de costo mínimo (solo grafos NO dirigidos)
+    # ------------------------------------------------------------------
+    def kruskal(self):
+        """Árbol de expansión de costo mínimo con el algoritmo de Kruskal.
+
+        Ordena las aristas por peso y agrega la más barata que no forme ciclo
+        (usa Union-Find para detectar ciclos).
+
+        Returns:
+            tuple: (aristas, costo_total) con aristas como lista de (u, v, peso).
+            None: Si el grafo es dirigido o no es conexo.
+        """
+        if self.dirigido:
+            return None
+        if self.num_vertices == 0:
+            return [], 0
+
+        # Solo la mitad superior de la matriz: cada arista una sola vez
+        aristas = []
+        for u in range(self.num_vertices):
+            for v in range(u + 1, self.num_vertices):
+                if self._matriz[u][v] != 0:
+                    aristas.append((self._matriz[u][v], u, v))
+        aristas.sort(key=lambda a: a[0])
+
+        # Union-Find: cada vértice empieza en su propio grupo
+        padre = list(range(self.num_vertices))
+
+        def buscar(x):
+            while padre[x] != x:
+                padre[x] = padre[padre[x]]  # compresión de caminos
+                x = padre[x]
+            return x
+
+        mst = []
+        costo_total = 0
+        for peso, u, v in aristas:
+            raiz_u, raiz_v = buscar(u), buscar(v)
+            if raiz_u != raiz_v:            # distintos grupos: no forma ciclo
+                padre[raiz_u] = raiz_v      # los une
+                mst.append((u, v, peso))
+                costo_total += peso
+
+        if len(mst) != self.num_vertices - 1:
+            return None  # no conexo
+        return mst, costo_total
+
+    def prim(self, inicio=0):
+        """Árbol de expansión de costo mínimo con el algoritmo de Prim.
+
+        Parte de un vértice y en cada paso toma la arista más barata que
+        conecta lo ya visitado con un vértice nuevo (usa un heap).
+
+        Args:
+            inicio (int): Vértice inicial (por defecto 0).
+
+        Returns:
+            tuple: (aristas, costo_total) con aristas como lista de (u, v, peso).
+            None: Si el grafo es dirigido o no es conexo.
+        """
+        if self.dirigido:
+            return None
+        if self.num_vertices == 0:
+            return [], 0
+        if inicio < 0 or inicio >= self.num_vertices:
+            return None
+
+        visitados = {inicio}
+        heap = [(self._matriz[inicio][v], inicio, v)
+                for v in range(self.num_vertices) if self._matriz[inicio][v] != 0]
+        heapq.heapify(heap)
+        mst = []
+        costo_total = 0
+
+        while heap and len(visitados) < self.num_vertices:
+            peso, u, v = heapq.heappop(heap)
+            if v in visitados:
+                continue  # esa arista ya no aporta
+            visitados.add(v)
+            mst.append((u, v, peso))
+            costo_total += peso
+            for w in range(self.num_vertices):
+                if self._matriz[v][w] != 0 and w not in visitados:
+                    heapq.heappush(heap, (self._matriz[v][w], v, w))
+
+        if len(visitados) != self.num_vertices:
+            return None  # no conexo
+        return mst, costo_total
